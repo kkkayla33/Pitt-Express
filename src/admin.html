@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pitt-Express Grocery Delivery</title>
+    <link rel="stylesheet" type="text/css" href="styles/BaseLayout.css">
+    <link rel="stylesheet" type="text/css" href="styles/admin.css">
+</head>
+<body>
+<script>
+    //loading
+    window.onload=ok;
+    function ok(){
+        var decodedCookie = decodeURIComponent(document.cookie);
+        var ca = decodedCookie.split(';');
+        var loginstatus;
+        var username;
+        var userkind;
+        var position;
+        var name;
+        var myregionid;
+        var myregionname;
+        var mystoreid;
+        var mystorename;
+        var myid;
+        for(var i = 0; i <ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0) == ' ') {
+                c = c.substring(1);
+            }
+            if (c.indexOf("loginstatus") == 0) {
+                loginstatus =  c.split('=')[1];
+            }else if (c.indexOf("userkind") == 0) {
+                userkind =  c.split('=')[1];
+            }else if (c.indexOf("username") == 0) {
+                username =  c.split('=')[1];
+            }else if (c.indexOf("position") == 0) {
+                position =  c.split('=')[1];
+            }else if (c.indexOf("name") == 0) {
+                name = c.split('=')[1];
+            }else if (c.indexOf("myregionid") == 0) {
+                myregionid = c.split('=')[1];
+            }else if (c.indexOf("myregionname") == 0) {
+                myregionname = c.split('=')[1];
+            }else if (c.indexOf("mystoreid") == 0) {
+                mystoreid = c.split('=')[1];
+            }else if (c.indexOf("mystorename") == 0) {
+                mystorename = c.split('=')[1];
+            }else if (c.indexOf("myid") == 0) {
+                myid = c.split('=')[1];
+            }
+        }
+        if(loginstatus != 0 || userkind != 'Staff'){
+            document.cookie="username=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            document.cookie="userkind=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            document.cookie="loginstatus=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+            window.location.href="index.html";
+        }else{
+            if(position != null || position!=''){
+                if(position == "CEO"){
+                    document.getElementById("orderMgr").innerHTML = "<p onclick=\"viewOrder('"+position+"','"+mystoreid+"')\">- Order Management</p>";
+                    document.getElementById("position").innerHTML = position;
+                    document.getElementById("invMgr").hidden = true;
+                    viewOrder(position, 0);
+                }else if(position == 'regionManager'){
+                    document.getElementById("orderMgr").innerHTML = "<p onclick=\"viewOrder('"+position+"','"+myregionid+"')\">- Order Management</p>";
+                    document.getElementById("position").innerHTML = myregionname.replace(/\+/g," ")+" Region Manager "+name.replace(/\+/g," ");
+                    document.getElementById("invMgr").hidden = true;
+                    document.getElementById("dataAnalyse").hidden = true;
+                    document.getElementById("storeMgr").hidden = true;
+                    document.getElementById("regionMgr").hidden = true;
+                    viewOrder(position, myregionid);
+                }else if(position == "storeManager"){
+                    document.getElementById("invMgr").innerHTML = "<p onclick=\"manageInv('"+mystoreid+"')\">- Inventory Management</p>";
+                    document.getElementById("orderMgr").innerHTML = "<p onclick=\"viewOrder('"+position+"','"+mystoreid+"')\">- Order Management</p>";
+                    document.getElementById("position").innerHTML = mystorename.replace(/\+/g," ")+" Store Manager "+name.replace(/\+/g," ");
+                    document.getElementById("staffMgr").hidden = true;
+                    document.getElementById("storeMgr").hidden = true;
+                    document.getElementById("regionMgr").hidden = true;
+                    document.getElementById("dataAnalyse").hidden = true;
+                    viewOrder(position, mystoreid);
+                }else{
+                    document.getElementById("orderMgr").innerHTML = "<p onclick=\"viewOrder(deliveryman,'"+myid+"')\">- Order Management</p>";
+                    document.getElementById("position").innerHTML = mystorename.replace(/\+/g," ")+" Store Deliveryman "+name.replace(/\+/g," ");
+                    document.getElementById("staffMgr").hidden = true;
+                    document.getElementById("storeMgr").hidden = true;
+                    document.getElementById("regionMgr").hidden = true;
+                    document.getElementById("invMgr").hidden = true;
+                    document.getElementById("dataAnalyse").hidden = true;
+
+                    viewOrder(position, myid);
+                }
+            }
+        }
+    }
+
+    //exit
+    function exitLogin() {
+        document.cookie="username=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie="userkind=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        document.cookie="loginstatus=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+        window.location.href="index.html";
+    }
+
+    //Order Management
+    function viewOrder(position, refid){
+        xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("main-column").innerHTML=xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getOrders.php?position="+position+"&refid="+refid,true);
+        xmlhttp.send();
+    }
+
+    //Data Analysis
+    function dataAnalyze(){
+        var aggregate_sales = "Aggregate Sales:<h3 id='aggregate_sales'></h3>";
+        var aggregate_profits = "Aggregate Profits:<h3 id='aggregate_profits'></h3>";
+        var top10 = "Top 10 product categories:<h3 id='top10'></h3>";
+        var region_sales = "Region Sales:<h3 id='region_sales'></h3>";
+        var store_sales = "Store Sales:<h3 id='store_sales'></h3>";
+        var best_seller_business  = "Best Seller Business: <h3 id='best_seller_business'></h3>";
+        document.getElementById("main-column").innerHTML = aggregate_sales + aggregate_profits + top10 + region_sales + store_sales +best_seller_business;
+        refreshAggrSales();
+        refreshAggrProfits();
+        refreshTop10();
+        refreshRegionSales();
+        refreshStoreSales();
+        refreshBestSellerBusiness();
+    }
+
+    function refreshAggrSales(){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("aggregate_sales").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getAggSales.php",true);
+        xmlhttp.send();
+    }
+
+    function refreshAggrProfits(){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+
+                document.getElementById("aggregate_profits").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getAggProfits.php",true);
+        xmlhttp.send();
+    }
+
+    function refreshTop10(){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("top10").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getTop10.php",true);
+        xmlhttp.send();
+    }
+
+    function refreshRegionSales(){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("region_sales").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getRegionSales.php",true);
+        xmlhttp.send();
+    }
+
+    function refreshStoreSales(){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("store_sales").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getStoreSales.php",true);
+        xmlhttp.send();
+    }
+
+    function refreshBestSellerBusiness() {
+
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("best_seller_business").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getBestSellerBusiness.php",true);
+        xmlhttp.send();
+    }
+
+    //Staff Management
+    function manageStaff(){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("main-column").innerHTML=xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getStaffs.php",true);
+        xmlhttp.send();
+    }
+
+    function addStaff(){
+        var name=document.getElementById("name").value;
+        if (name==null || name=="")
+        {
+            alert("Staff name is empty!");
+            return false;
+        }
+
+        var username=document.getElementById("account").value;
+        if (username==null || username=="")
+        {
+            alert("Username is empty!");
+            return false;
+        }
+        if (username=="admin")
+        {
+            alert("'admin' is a reserved username!");
+            return false;
+        }
+
+        var pwd=document.getElementById("pwd").value;
+        if (pwd==null || pwd=="")
+        {
+            alert("Password is empty!");
+            return false;
+        }
+        var region=document.getElementById("region").value;
+        if (region==null || region=="")
+        {
+            alert("Please specify region!");
+            return false;
+        }
+
+        var store=document.getElementById("store").value;
+        if (store==null || store=="")
+        {
+            alert("Please specify store!");
+            return false;
+        }
+
+        var address=document.getElementById("address").value;
+        if (address==null || address=="")
+        {
+            alert("Address is empty!");
+            return false;
+        }
+
+        var email=document.getElementById("email").value;
+        if (email==null || email=="")
+        {
+            alert("Email is empty!");
+            return false;
+        }
+
+        var atpos=email.indexOf("@");
+        var dotpos=email.lastIndexOf(".");
+        if (atpos<1 || dotpos<atpos+2 || dotpos+2>=email.length){
+            alert("The style of email is NOT Correct!");
+            return false;
+        }
+
+        var salary=document.getElementById("salary").value;
+        if (salary==null || salary=="")
+        {
+            alert("Salary is empty!");
+            return false;
+        }
+
+        var xmlhttp =new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                manageStaff();
+            }
+        }
+
+        xmlhttp.open("POST","/addStaff.php",true);
+        xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+        var sendMessage = "username="+username + "&name="+name+"&pwd="+pwd+"&region="+region +"&address="+address+"&store="+store+"&email="+email+"&salary="+salary;
+
+        xmlhttp.send(sendMessage);
+    }
+
+    function getStore() {
+        var region_id = document.getElementById("region").value;
+        xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("store").innerHTML=xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getStore.php?rid="+region_id+"&output=option",true);
+        xmlhttp.send();
+    }
+
+    function getStaffStore(staff_id) {
+        var region_id = document.getElementById("sid_"+staff_id+"_region").value;
+        xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                if(staff_id != null || staff_id != ''){
+                    document.getElementById("sid_"+staff_id+"_store").innerHTML=xmlhttp.responseText;
+                }else{
+                    document.getElementById("store").innerHTML=xmlhttp.responseText;
+                }
+            }
+        }
+        xmlhttp.open("GET","getStore.php?rid="+region_id+"&output=option",true);
+        xmlhttp.send();
+    }
+
+    function editStaff(staff_id){
+        var staff = document.getElementById("staff_"+staff_id);
+        var staff_name = staff.getElementsByClassName("staff_name")[0].innerHTML;
+        staff.getElementsByClassName("staff_name")[0].innerHTML =  "<input type=\"text\" id=\"sid_"+staff_id+"_name\" value='"+staff_name+"' style=\"width:70px;\">";
+
+        var staff_username = staff.getElementsByClassName("staff_username")[0].innerHTML;
+        staff.getElementsByClassName("staff_username")[0].innerHTML = "<input type=\"text\" id=\"sid_"+staff_id+"_account\"  value='"+staff_username+"' style=\"width:80px\">";
+
+        var staff_pwd = staff.getElementsByClassName("staff_pwd")[0].innerHTML;
+        staff.getElementsByClassName("staff_pwd")[0].innerHTML = "<input type=\"text\" id=\"sid_"+staff_id+"_pwd\" value='"+staff_pwd+"' style=\"width:70px\">";
+
+        var staff_region = staff.getElementsByClassName("staff_region")[0].innerHTML;
+        xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                staff.getElementsByClassName("staff_region")[0].innerHTML = "<select name=\"region\" id=\"sid_"+staff_id+"_region\" onclick=\"getStaffStore('"+staff_id+"')\" onchange=\"getStaffStore('"+staff_id+"')\">"+xmlhttp.responseText+"</select>";
+            }
+        }
+        xmlhttp.open("GET","getRegion.php",true);
+        xmlhttp.send();
+
+        var staff_store = staff.getElementsByClassName("staff_store")[0].innerHTML;
+        staff.getElementsByClassName("staff_store")[0].innerHTML = "<select name=\"store\" id=\"sid_"+staff_id+"_store\" style=\"width:50px\"></select>";
+
+        var staff_addr = staff.getElementsByClassName("staff_addr")[0].innerHTML;
+        staff.getElementsByClassName("staff_addr")[0].innerHTML = "<textarea id=\"sid_"+staff_id+"_address\" style=\"width:70px\">"+staff_addr+"</textarea>";
+
+        var staff_email = staff.getElementsByClassName("staff_email")[0].innerHTML;
+        staff.getElementsByClassName("staff_email")[0].innerHTML = "<input type=\"text\" id=\"sid_"+staff_id+"_email\" value='"+staff_email+"'>";
+
+        var staff_salary = staff.getElementsByClassName("staff_salary")[0].innerHTML;
+        staff.getElementsByClassName("staff_salary")[0].innerHTML = "<input type=\"number\" id=\"sid_"+staff_id+"_salary\" value='"+staff_salary+"' min=\"0\" style=\"width:45px\">";
+
+        var btn = staff.getElementsByClassName("btn")[0].innerHTML;
+        staff.getElementsByClassName("btn")[0].innerHTML = "<button onclick=\"updateStaff("+staff_id+")\">Update</button><button onclick=\"fireStaff("+staff_id+")\">Fire</button>";
+    }
+
+    function fireStaff(staff_id){
+        xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                manageStaff();
+            }
+        }
+        xmlhttp.open("GET","/deleteStaff.php?sid="+staff_id,true);
+        xmlhttp.send();
+    }
+
+    function updateStaff(staff_id){
+        var name=document.getElementById("sid_"+staff_id+"_name").value;
+        if (name==null || name=="")
+        {
+            alert("Staff name is empty!");
+            return false;
+        }
+
+        var username=document.getElementById("sid_"+staff_id+"_account").value;
+        if (username==null || username=="")
+        {
+            alert("Username is empty!");
+            return false;
+        }
+        if (username=="admin")
+        {
+            alert("'admin' is a reserved username!");
+            return false;
+        }
+
+        var pwd=document.getElementById("sid_"+staff_id+"_pwd").value;
+        if (pwd==null || pwd=="")
+        {
+            alert("Password is empty!");
+            return false;
+        }
+        var region=document.getElementById("sid_"+staff_id+"_region").value;
+        if (region==null || region=="")
+        {
+            alert("Please specify region!");
+            return false;
+        }
+
+        var store=document.getElementById("sid_"+staff_id+"_store").value;
+        if (store==null || store=="")
+        {
+            alert("Please specify store!");
+            return false;
+        }
+
+        var address=document.getElementById("sid_"+staff_id+"_address").value;
+        if (address==null || address=="")
+        {
+            alert("Address is empty!");
+            return false;
+        }
+
+        var email=document.getElementById("sid_"+staff_id+"_email").value;
+        if (email==null || email=="")
+        {
+            alert("Email is empty!");
+            return false;
+        }
+
+        var atpos=email.indexOf("@");
+        var dotpos=email.lastIndexOf(".");
+        if (atpos<1 || dotpos<atpos+2 || dotpos+2>=email.length){
+            alert("The style of email is NOT Correct!");
+            return false;
+        }
+
+        var salary=document.getElementById("sid_"+staff_id+"_salary").value;
+        if (salary==null || salary=="")
+        {
+            alert("Salary is empty!");
+            return false;
+        }
+
+        var xmlhttp =new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                manageStaff();
+            }
+        }
+
+        xmlhttp.open("POST","/updateStaff.php",true);
+        xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+        var sendMessage = "sid="+staff_id+"&username="+username + "&name="+name+"&pwd="+pwd+"&region="+region +"&address="+address+"&store="+store+"&email="+email+"&salary="+salary;
+
+        xmlhttp.send(sendMessage);
+    }
+
+    //Region Management
+    function manageRegion(){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("main-column").innerHTML=xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getRegion.php?output=table",true);
+        xmlhttp.send();
+    }
+
+    function addRegion() {
+        var name=document.getElementById("name").value;
+        if (name==null || name=="")
+        {
+            alert("Region name is empty!");
+            return false;
+        }
+
+        var manager=document.getElementById("manager").value;
+        if (manager==null || manager=="")
+        {
+            alert("Please specify region manager!");
+            return false;
+        }
+
+        var xmlhttp =new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                manageRegion();
+            }
+        }
+
+        xmlhttp.open("POST","/addRegion.php",true);
+        xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+        var sendMessage = "name="+name+"&manager="+manager;
+
+        xmlhttp.send(sendMessage);
+    }
+
+    function deleteRegion(region_id){
+        xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                manageRegion();
+            }
+        }
+        xmlhttp.open("GET","/deleteRegion.php?rid="+region_id,true);
+        xmlhttp.send();
+    }
+
+    //Store Management
+    function manageStore(){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("main-column").innerHTML=xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getStore.php?output=table",true);
+        xmlhttp.send();
+    }
+
+    function addStore() {
+
+        var region=document.getElementById("region").value;
+        if (region==null || region=="")
+        {
+            alert("Region name is empty!");
+            return false;
+        }
+
+        var name=document.getElementById("name").value;
+        if (name==null || name=="")
+        {
+            alert("Region name is empty!");
+            return false;
+        }
+
+        var manager=document.getElementById("manager").value;
+        if (manager==null || manager=="")
+        {
+            alert("Please specify region manager!");
+            return false;
+        }
+
+        var xmlhttp =new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                manageStore();
+            }
+        }
+
+        xmlhttp.open("POST","/addStore.php",true);
+        xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+        var sendMessage = "region="+region+"&name="+name+"&manager="+manager;
+
+        xmlhttp.send(sendMessage);
+    }
+
+    function deleteStore(store_id){
+        alert("hello");
+        xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200){
+                manageStore();
+            }
+        }
+        xmlhttp.open("GET","/deleteStore.php?sid="+store_id,true);
+        xmlhttp.send();
+    }
+
+    //Inventory Management
+    function manageInv(store_id){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("main-column").innerHTML = xmlhttp.responseText;
+               // document.getElementById("main-column").innerHTML=xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getInventory.php?sid="+store_id,true);
+        xmlhttp.send();
+    }
+
+    function addInv(store_id) {
+
+        var product=document.getElementById("product").value;
+        if (product==null || product=="")
+        {
+            alert("Please specify the product!");
+            return false;
+        }
+
+        var inventory=document.getElementById("inventory").value;
+        if (inventory==null || inventory=="")
+        {
+            alert("inventory number is empty!");
+            return false;
+        }
+
+        var price=document.getElementById("price").value;
+        if (price==null || price=="")
+        {
+            alert("price is empty!");
+            return false;
+        }
+
+        var xmlhttp =new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                manageInv(store_id);
+            }
+        }
+        xmlhttp.open("POST","/addInv.php",true);
+        xmlhttp.setRequestHeader("Content-type","application/x-www-form-urlencoded");
+        var sendMessage = "product="+product+"&inventory="+inventory+"&sid="+store_id+"&price="+price;
+
+        xmlhttp.send(sendMessage);
+    }
+
+    //Product Management
+    function manageProt(){
+        var xmlhttp=new XMLHttpRequest();
+        xmlhttp.onreadystatechange=function()
+        {
+            if (xmlhttp.readyState==4 && xmlhttp.status==200)
+            {
+                document.getElementById("main-column").innerHTML = xmlhttp.responseText;
+            }
+        }
+        xmlhttp.open("GET","getProduct.php",true);
+        xmlhttp.send();
+    }
+</script>
+<div class="header">
+    <a href="index.html"><img class="logo" src="images/p.png" width="100px" ></a>
+    <p>Pitt-Express Grocery Delivery</p>
+</div>
+<div class="side-column">
+    Hello, <p id="position" style="display: inline"></p>
+    <input type="button" onclick="exitLogin()" value="Exit">
+    <div id="orderMgr"><p onclick="viewOrder()">- Order Management</p></div>
+    <div id="staffMgr"><p onclick="manageStaff()">- Staff Management</p></div>
+    <p id="regionMgr" onclick="manageRegion()">- Region Management</p>
+    <p id="storeMgr" onclick="manageStore()">- Store Management</p>
+    <div id="invMgr"></div>
+    <p id="dataAnalyse" onclick="dataAnalyze()">- Selling Data Analysis</p>
+</div>
+<div class="main-column" id="main-column">
+
+</div>
+</body>
+</html>

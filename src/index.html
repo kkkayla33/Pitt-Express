@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="styles/BaseLayout.css">
+    <link rel="stylesheet" type="text/css" href="styles/login.css">
+    <script>
+        window.onload = ok;
+        function ok() {
+            var decodedCookie = decodeURIComponent(document.cookie);
+            var ca = decodedCookie.split(';');
+            var loginstatus;
+            var userkind;
+            for(var i = 0; i <ca.length; i++) {
+                var c = ca[i];
+                while (c.charAt(0) == ' ') {
+                    c = c.substring(1);
+                }
+                if (c.indexOf("loginstatus") == 0) {
+                    loginstatus =  c.split('=')[1];
+                }
+                if (c.indexOf("userkind") == 0) {
+                    userkind =  c.split('=')[1];
+                }
+            }
+
+            if(loginstatus == 0){
+                if(userkind == 'Customer'){
+                    window.location.href='view.php';
+                }else{
+                    window.location.href='admin.html';
+                }
+            }else if(loginstatus == -1) {
+                document.cookie = "loginstatus=; expires=Thu, 01 Jan 1970 00:00:00 GMT";
+                document.getElementById("hint").innerHTML="Login Failed";
+            }
+        }
+        
+        function validateForm() {
+            var x=document.forms["login"]["username"].value;
+            if (x==null || x=="")
+            {
+                document.getElementById("hint").innerHTML="Username is empty!";
+                return false;
+            }
+
+            var x=document.forms["login"]["pwd"].value;
+            if (x==null || x=="")
+            {
+                document.getElementById("hint").innerHTML="Password is empty!";
+                return false;
+            }
+        }
+    </script>
+</head>
+<body>
+<div class="header">
+    <a href="index.html"><img class="logo" src="images/p.png" width="100px" ></a>
+    <p>Pitt-Express Grocery Delivery</p>
+</div>
+<div class="back">
+    <div class="side-column">
+        <form class = "login" name="login" action="login.php" onsubmit="return validateForm()" method="post">
+            <p style="font-family:courier;">Username  <input type="text" name="username"></p>
+            <p style="font-family:courier;">Password  <input type="password" name="pwd"></p>
+            <p id="hint" style="color:red;"></p>
+            <br>
+            You are<input type="radio" name="userkind" value="Customer" checked="checked">Customer
+            <input type="radio" name="userkind" value="Staff">Staff
+            <br>
+            <input type="submit" value="Log in">
+            <a href="register.html"><input type="button" value="Sign up"></a>
+            <br>
+        </form>
+    </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="styles/BaseLayout.css">
+    <link rel="stylesheet" type="text/css" href="styles/register.css">
+    <script>
+        window.onload=ok;
+        function ok() {
+            xmlhttp=new XMLHttpRequest();
+            xmlhttp.onreadystatechange=function()
+            {
+                if (xmlhttp.readyState==4 && xmlhttp.status==200)
+                {
+                    document.getElementById("state").innerHTML=xmlhttp.responseText;
+                }
+            }
+            xmlhttp.open("GET","getRegion.php",true);
+            xmlhttp.send();
+        }
+        function displayhome() {
+            var home = document.getElementById("home");
+            var business = document.getElementById("business");
+            business.style.display="none";
+            home.style.display="block";
+        }
+        function displaybusiness() {
+            var home = document.getElementById("home");
+            var business = document.getElementById("business");
+            home.style.display="none";
+            business.style.display="block";
+        }
+        function validateForm() {
+            var x=document.forms["register"]["username"].value;
+            if (x==null || x=="")
+            {
+                document.getElementById("hint").innerHTML="Username is empty!";
+                return false;
+            }
+
+            x=document.forms["register"]["pwd"].value;
+            if (x==null || x=="")
+            {
+                document.getElementById("hint").innerHTML="Password is empty!";
+                return false;
+            }
+
+            var pwd = document.forms["register"]["confirm"].value;
+            if (x != pwd)
+            {
+                document.getElementById("hint").innerHTML="Please confirm your password!";
+                return false;
+            }
+
+            x=document.forms["register"]["street"].value;
+            if (x==null || x=="")
+            {
+                document.getElementById("hint").innerHTML="Address is empty!";
+                return false;
+            }
+
+            x=document.forms["register"]["city"].value;
+            if (x==null || x=="")
+            {
+                document.getElementById("hint").innerHTML="City is empty!";
+                return false;
+            }
+
+            x=document.forms["register"]["state"].value;
+            if (x==null || x=="")
+            {
+                document.getElementById("hint").innerHTML="State is empty!";
+                return false;
+            }
+
+            x=document.forms["register"]["zipcode"].value;
+            if (x==null || x=="")
+            {
+                document.getElementById("hint").innerHTML="Zipcode is empty!";
+                return false;
+            }
+            if(x.search(/[0-9]{5}/)<0){
+                document.getElementById("hint").innerHTML="Zipcode is NOT Correct!";
+                return false;
+            }
+
+            x=document.forms["register"]["kind"].value;
+            if (x==null || x=="")
+            {
+                document.getElementById("hint").innerHTML="Please specify your account kind";
+                return false;
+            }
+
+            if(x == 'Home'){
+                x=document.forms["register"]["age"].value;
+                if (x==null || x=="")
+                {
+                    document.getElementById("hint").innerHTML="Age is empty!";
+                    return false;
+                }
+
+                x=document.forms["register"]["gender"].value;
+                if (x==null || x=="")
+                {
+                    document.getElementById("hint").innerHTML="Please specify your gender";
+                    return false;
+                }
+
+                x=document.forms["register"]["marriage"].value;
+                if (x==null || x=="")
+                {
+                    document.getElementById("hint").innerHTML="Please specify your marriage status";
+                    return false;
+                }
+
+                x=document.forms["register"]["home_income"].value;
+                if (x==null || x=="")
+                {
+                    document.getElementById("hint").innerHTML="Home income is empty!";
+                    return false;
+                }
+            }else{
+
+                x=document.forms["register"]["company_income"].value;
+                if (x==null || x=="")
+                {
+                    document.getElementById("hint").innerHTML="Gross annual income is empty!";
+                    return false;
+                }
+
+            }
+        }
+    </script>
+
+</head>
+<body>
+<div class="header">
+    <a href="index.html"><img class="logo" src="images/p.png" width="100px" ></a>
+    <p>Pitt-Express Grocery Delivery</p>
+</div>
+<div class="content">
+<h3>Registration Form</h3>
+    <p id="hint" style="color: red"></p>
+<form name="register" action="signup.php" onsubmit="return validateForm()" method="post">
+    Username: <input type="text" name="username">
+    <br>
+    Password: <input type="password" name="pwd">
+    <br>
+    Confirm Password: <input type="password" name="confirm">
+    <br>
+    Address: <input type="text" name="street">
+    <br>
+    City: <input type="text" name="city">
+    <br>
+    State:
+    <select name="state" id="state"></select>
+    <br>
+    Zipcode: <input type="text" name="zipcode">
+    <br>
+    You are:<input type="radio" name="kind" value="Home" onclick="displayhome()">Home
+    <input type="radio" name="kind" value="Business" onclick="displaybusiness()">Business
+
+    <br>
+    <div id="home" style="display: none">
+        Age: <input type="number" name="age" min="0" max="150">
+        <br>
+        Gender<input type="radio" name="gender" value="M">Male
+        <input type="radio" name="gender" value="F">Female
+        <br>
+        Marriage<input type="radio" name="marriage" value="Y">Yes
+        <input type="radio" name="marriage" value="N">No
+        <br>
+        Income: <input type="number" name="home_income" min="0">
+    </div>
+    <div id="business" style="display: none">
+        <br>
+        Gross annual income: <input type="number" name="company_income" min="0">
+    </div>
+    <br>
+    <input type="submit" value="Register!">
+</form>
+</div>
+</body>
+</html>
