@@ -1,5 +1,5 @@
 # Pitt-Express
-Pitt-Express Grocery Delivery is a grocery delivery system, building with HTML, AJAX and CSS.
+Pitt-Express Grocery Delivery is a grocery delivery system, building with PHP and MySQL.
 
 Support functions- customer page
 
